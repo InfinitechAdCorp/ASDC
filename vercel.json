@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/email-notif/upcoming-dive",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/email-notif/upcoming-class",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

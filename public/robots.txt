@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://asdc-coral.vercel.app/
+
+# Sitemaps
+Sitemap: https://asdc-coral.vercel.app/sitemap.xml

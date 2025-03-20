@@ -1,0 +1,280 @@
+import React, { useState } from "react";
+import {
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    Input,
+    Button,
+    Link,
+    CardHeader,
+    Card,
+    CardBody,
+} from "@nextui-org/react";
+import { Eye, X, EyeOff, MailIcon, User, CircleX, AlertCircle, CircleCheck } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+
+interface SignUpProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+interface FieldError {
+    [key: string]: string;
+}
+
+export function SignUp({ isOpen, onClose }: SignUpProps) {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [isVisible, setIsVisible] = React.useState(false);
+    const toggleVisibility = () => setIsVisible(!isVisible);
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<FieldError>({});
+    const [loading, setLoading] = useState(false);
+    const [isFormValid, setIsFormValid] = useState(false);
+
+    const validateField = (name: string, value: string) => {
+        if (!value.trim()) {
+            setFieldErrors(prev => ({ ...prev, [name]: "This field is required" }));
+        } else {
+            setFieldErrors(prev => {
+
+                const newErrors = { ...prev };
+
+                delete newErrors[name];
+
+                return newErrors;
+            });
+        }
+
+        const allFieldsFilled = ['firstName', 'lastName', 'email', 'password'].every(field =>
+            field === name ? value.trim() !== '' :
+                (field === 'firstName' ? firstName :
+                    field === 'lastName' ? lastName :
+                        field === 'email' ? email : password).trim() !== ''
+        );
+
+        setIsFormValid(allFieldsFilled && Object.keys(fieldErrors).length === 0);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        switch (name) {
+            case 'firstName':
+                setFirstName(value);
+                break;
+            case 'lastName':
+                setLastName(value);
+                break;
+            case 'email':
+                setEmail(value);
+                break;
+            case 'password':
+                setPassword(value);
+                break;
+        }
+        validateField(name, value);
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSuccess("");
+        setError("");
+
+        validateField('firstName', firstName);
+        validateField('lastName', lastName);
+        validateField('email', email);
+        validateField('password', password);
+
+        if (Object.keys(fieldErrors).length > 0) {
+            return;
+        }
+
+        const userData = {
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            password,
+        };
+
+        try {
+            setLoading(true);
+            const response = await fetch("/api/auth/sign-up", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(userData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                setError(errorData.message || 'Something went wrong');
+                return;
+            }
+
+            setSuccess("You're all set! Please check your email to verify your account and get started")
+            // const data = await response.json();
+            // console.log("User created successfully:", data);
+
+            setFirstName("");
+            setLastName("");
+            setEmail("");
+            setPassword("");
+
+        } catch (error) {
+            setLoading(false);
+            setError("Error creating user:");
+            // console.error("Error creating user:", error);
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+
+    const ErrorMessage = ({ message }: { message: string }) => (
+        <div
+            className="flex items-center gap-1 text-red-500 text-sm mt-1"
+        >
+            <AlertCircle size={16} />
+            <span>{message}</span>
+        </div>
+    );
+
+    return (
+        <Modal
+            placement="center"
+            isOpen={isOpen}
+            onOpenChange={onClose}
+            size="full"
+            disableAnimation
+            hideCloseButton
+        >
+            <ModalContent>
+                {(onClose) => (
+                    <>
+                        <ModalHeader>
+                            <Link
+                                href="#"
+                                onClick={onClose}
+                                className="flex items-center gap-1 cursor-pointer">
+                                <X size={18} className="text-primary" />
+                                <small className="text-black font-semibold">Close</small>
+                            </Link>
+                        </ModalHeader>
+                        <ModalBody className="flex justify-center items-center">
+                            <Card className="w-96 md:w-[500px] p-6" style={{ maxWidth: '90vw' }}>
+                                <CardHeader>
+                                    <div className="flex justify-start items-center w-full">
+                                        <h2 className="text-primary text-2xl font-bold">SIGN UP</h2>
+                                    </div>
+                                </CardHeader>
+                                <CardBody>
+                                    <form className="grid gap-y-1" onSubmit={handleSubmit}>
+                                        {error && (
+                                            <div className="flex items-center gap-2 p-4 text-sm text-red-800 rounded-xl bg-red-50 dark:bg-gray-800">
+                                                <CircleX size={20} />{error}
+                                            </div>
+                                        )}
+                                        {success && (
+                                            <div className="flex items-center gap-2 p-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
+                                                <CircleCheck className="h-full" />{success}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <Input
+                                                label="First name"
+                                                variant="underlined"
+                                                id="firstName"
+                                                name="firstName"
+                                                value={firstName}
+                                                onChange={handleInputChange}
+                                                isRequired
+                                                endContent={
+                                                    <User size={22} className="text-2xl text-primary pointer-events-none flex-shrink-0" />
+                                                }
+                                            />
+                                            <AnimatePresence>
+                                                {fieldErrors.firstName && <ErrorMessage message={fieldErrors.firstName} />}
+                                            </AnimatePresence>
+                                        </div>
+                                        <div>
+                                            <Input
+                                                label="Last name"
+                                                variant="underlined"
+                                                id="lastName"
+                                                name="lastName"
+                                                value={lastName}
+                                                onChange={handleInputChange}
+                                                isRequired
+                                                endContent={
+                                                    <User size={22} className="text-2xl text-primary pointer-events-none flex-shrink-0" />
+                                                }
+                                            />
+                                            <AnimatePresence>
+                                                {fieldErrors.lastName && <ErrorMessage message={fieldErrors.lastName} />}
+                                            </AnimatePresence>
+                                        </div>
+                                        <div>
+                                            <Input
+                                                label="Email"
+                                                variant="underlined"
+                                                type="email"
+                                                id="email"
+                                                name="email"
+                                                value={email}
+                                                onChange={handleInputChange}
+                                                isRequired
+                                                endContent={
+                                                    <MailIcon size={20} className="text-2xl text-primary pointer-events-none flex-shrink-0" />
+                                                }
+                                            />
+                                            <AnimatePresence>
+                                                {fieldErrors.email && <ErrorMessage message={fieldErrors.email} />}
+                                            </AnimatePresence>
+                                        </div>
+                                        <div>
+                                            <Input
+                                                label="Password"
+                                                variant="underlined"
+                                                id="password"
+                                                name="password"
+                                                value={password}
+                                                onChange={handleInputChange}
+                                                isRequired
+                                                endContent={
+                                                    <button className="focus:outline-none" type="button" onClick={toggleVisibility} aria-label="toggle password visibility">
+                                                        {isVisible ? (
+                                                            <Eye size={22} className="text-2xl text-primary pointer-events-none" />
+                                                        ) : (
+                                                            <EyeOff size={22} className="text-2xl text-primary pointer-events-none" />
+                                                        )}
+                                                    </button>
+                                                }
+                                                type={isVisible ? "text" : "password"}
+                                            />
+                                            <AnimatePresence>
+                                                {fieldErrors.password && <ErrorMessage message={fieldErrors.password} />}
+                                            </AnimatePresence>
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            color="primary"
+                                            isLoading={loading}
+                                            isDisabled={!isFormValid}
+                                        >
+                                            Sign up
+                                        </Button>
+                                    </form>
+                                </CardBody>
+                            </Card>
+                        </ModalBody>
+                    </>
+                )}
+            </ModalContent>
+        </Modal >
+    );
+}

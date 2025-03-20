@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("POSTGRES_PRISMA_URL")
+  relationMode = "prisma"
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  email         String        @unique
+  password      String
+  is_archived   Boolean       @default(false)
+  avatar        String        @default("https://banner2.cleanpng.com/20180622/tqt/aazen4lhc.webp")
+  created_at    DateTime      @default(now())
+  is_verified   Boolean       @default(false)
+  otp_expiry    DateTime?
+  otp_pin       Int?
+  updated_at    DateTime      @default(now()) @updatedAt
+  certificates  Certificate[]
+  bookings      Booking[]
+  students      Student[]
+  dive_bookings DiveBooking[]
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  user_id     Int
+  type        String
+  date_issued DateTime @default(now()) @db.Date
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model Room {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  image       String
+  bookings    Booking[]
+}
+
+model Booking {
+  id         Int      @id @default(autoincrement())
+  end_date   DateTime
+  room_id    Int
+  start_date DateTime
+  user_id    Int
+  created_at DateTime @default(now())
+  fullname   String
+  guest      Int
+  status     String   @default("Pending")
+  updated_at DateTime @default(now()) @updatedAt
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  room       Room     @relation(fields: [room_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([room_id])
+}
+
+model DiveBooking {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  name        String
+  email       String
+  status      String   @default("Pending")
+  date        DateTime
+  time        String
+  participant Int
+  level       String
+  message     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now()) @updatedAt
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model AnnouncementBanner {
+  id         Int      @id @default(autoincrement())
+  content    String
+  color      String
+  visibility Boolean
+  updated_at DateTime @default(now()) @updatedAt
+}
+
+model FAQ {
+  id         Int      @id @default(autoincrement())
+  question   String
+  answer     String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+}
+
+model Testimonial {
+  id         Int      @id @default(autoincrement())
+  title      String
+  body       String
+  fullname   String
+  show       Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+}
+
+model ContactForm {
+  id        Int      @id @default(autoincrement())
+  email     String
+  name      String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  category    String
+  price       Int
+  image       String
+  created_at  DateTime @default(now())
+  batch       Batch[]
+}
+
+model Batch {
+  id         Int       @id @default(autoincrement())
+  name       String
+  product_id Int
+  start_date DateTime
+  end_date   DateTime
+  created_at DateTime  @default(now())
+  product    Product   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  students   Student[]
+
+  @@index([product_id])
+}
+
+model Student {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  batch_id   Int
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  batch      Batch    @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, batch_id], name: "unique_user_batch")
+  @@index([batch_id])
+  @@index([user_id])
+}
